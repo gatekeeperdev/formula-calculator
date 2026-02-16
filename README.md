@@ -2,7 +2,7 @@
 
 Build chained calculations where each row's result becomes a variable for other rows.
 
-[Try it live](https://bdedeurwaerder.github.io/formula-calculator/)
+[Try it live](https://gatekeeperdev.github.io/formula-calculator/)
 
 ## Features
 
