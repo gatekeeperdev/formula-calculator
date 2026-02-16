@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formula Calculator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      padding: 2rem 1rem 1rem;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    header p {
+      color: #888;
+      margin-top: .4rem;
+      font-size: .95rem;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    /* Controls bar */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: #181818;
+      border-radius: 10px;
+    }
+
+    .spacer { flex: 1; }
+
+    .btn {
+      padding: .55rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      font-size: .9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s, opacity .15s;
+    }
+
+    .btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: #4a9eff;
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) { background: #3a8eef; }
+
+    .btn-danger {
+      background: #333;
+      color: #e55;
+    }
+
+    .btn-danger:hover:not(:disabled) { background: #3a3a3a; }
+
+    .btn-small {
+      padding: .35rem .7rem;
+      font-size: .8rem;
+    }
+
+    /* Rows */
+    .rows-container {
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+    }
+
+    .formula-row {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: 1rem;
+      background: #181818;
+      border: 1px solid #333;
+      border-radius: 10px;
+      transition: border-color .2s;
+    }
+
+    .formula-row:hover {
+      border-color: #444;
+    }
+
+    .formula-row.error {
+      border-color: #e55;
+    }
+
+    .row-var {
+      display: flex;
+      flex-direction: column;
+      gap: .3rem;
+      flex-shrink: 0;
+    }
+
+    .row-var label {
+      font-size: .7rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .row-var input {
+      background: #222;
+      border: 1px solid #333;
+      color: #4a9eff;
+      padding: .45rem .5rem;
+      border-radius: 6px;
+      font-size: .9rem;
+      font-weight: 600;
+      width: 60px;
+      text-align: center;
+      font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+    }
+
+    .row-var input:focus {
+      outline: none;
+      border-color: #4a9eff;
+    }
+
+    .row-formula {
+      display: flex;
+      flex-direction: column;
+      gap: .3rem;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .row-formula label {
+      font-size: .7rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .row-formula input {
+      background: #222;
+      border: 1px solid #333;
+      color: #e0e0e0;
+      padding: .45rem .6rem;
+      border-radius: 6px;
+      font-size: .9rem;
+      width: 100%;
+      font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+    }
+
+    .row-formula input:focus {
+      outline: none;
+      border-color: #4a9eff;
+    }
+
+    .row-result {
+      display: flex;
+      flex-direction: column;
+      gap: .3rem;
+      flex-shrink: 0;
+      min-width: 100px;
+      text-align: right;
+    }
+
+    .row-result label {
+      font-size: .7rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .row-result .result-value {
+      padding: .45rem .6rem;
+      font-size: .95rem;
+      font-weight: 500;
+      color: #2ecc71;
+      font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+      background: #1a2e1a;
+      border-radius: 6px;
+      border: 1px solid #2a3e2a;
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .row-result .result-value.error {
+      color: #e55;
+      background: #2e1a1a;
+      border-color: #3e2a2a;
+    }
+
+    .row-result .result-value.empty {
+      color: #555;
+    }
+
+    .row-remove {
+      flex-shrink: 0;
+    }
+
+    .row-remove button {
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      color: #555;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 28px;
+      text-align: center;
+      transition: color .15s, border-color .15s, background .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .row-remove button:hover {
+      color: #e55;
+      border-color: #e55;
+      background: rgba(238, 85, 85, .1);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      border: 2px dashed #333;
+      border-radius: 12px;
+      color: #555;
+    }
+
+    .empty-state .icon {
+      font-size: 2.5rem;
+      margin-bottom: .5rem;
+    }
+
+    .empty-state .label {
+      font-size: 1.1rem;
+      color: #aaa;
+    }
+
+    .empty-state .sublabel {
+      font-size: .85rem;
+      color: #555;
+      margin-top: .3rem;
+    }
+
+    /* Info box */
+    .info-box {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: #181818;
+      border: 1px solid #333;
+      border-radius: 10px;
+      font-size: .85rem;
+      color: #888;
+      line-height: 1.6;
+    }
+
+    .info-box strong {
+      color: #aaa;
+    }
+
+    .info-box code {
+      background: #222;
+      padding: .15rem .4rem;
+      border-radius: 4px;
+      font-size: .8rem;
+      color: #4a9eff;
+      font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+    }
+
+    .info-box ul {
+      margin-top: .5rem;
+      padding-left: 1.2rem;
+    }
+
+    .info-box li {
+      margin-top: .25rem;
+    }
+
+    /* Variable reference pills */
+    .var-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .4rem;
+      margin-top: .5rem;
+    }
+
+    .var-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      background: #222;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: .2rem .5rem;
+      font-size: .75rem;
+      font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+    }
+
+    .var-pill .var-name {
+      color: #4a9eff;
+      font-weight: 600;
+    }
+
+    .var-pill .var-value {
+      color: #2ecc71;
+    }
+
+    .var-pill .var-eq {
+      color: #555;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: #444;
+      font-size: .8rem;
+    }
+
+    footer a {
+      color: #4a9eff;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 600px) {
+      .formula-row {
+        flex-wrap: wrap;
+      }
+
+      .row-formula {
+        order: 3;
+        width: 100%;
+        flex-basis: 100%;
+      }
+
+      .row-result {
+        text-align: left;
+        min-width: unset;
+        flex: 1;
+      }
+
+      .row-result .result-value {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Formula Calculator</h1>
+  <p>Build chained calculations &mdash; each row's result becomes a variable for other rows</p>
+</header>
+
+<div class="container">
+
+  <div class="controls">
+    <button class="btn btn-primary" id="addRowBtn">+ Add Row</button>
+    <div class="spacer"></div>
+    <button class="btn btn-danger" id="clearAllBtn" disabled>Clear All</button>
+  </div>
+
+  <div id="variableBar" class="var-list" style="display: none; margin-bottom: 1rem;"></div>
+
+  <div class="rows-container" id="rowsContainer">
+    <div class="empty-state" id="emptyState">
+      <div class="icon">f(x)</div>
+      <div class="label">No formulas yet</div>
+      <div class="sublabel">Click "Add Row" to start building calculations</div>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <strong>How it works</strong><br>
+    Each row has a <strong>variable name</strong>, a <strong>formula</strong>, and a computed <strong>result</strong>.
+    The result is stored in the variable, which you can reference in other rows' formulas.
+    <ul>
+      <li>Use standard math operators: <code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>**</code> <code>%</code> <code>( )</code></li>
+      <li>Reference other rows by variable name, e.g. <code>A * 2 + B</code></li>
+      <li>Built-in functions: <code>sqrt()</code> <code>abs()</code> <code>round()</code> <code>floor()</code> <code>ceil()</code> <code>min()</code> <code>max()</code> <code>sin()</code> <code>cos()</code> <code>tan()</code> <code>log()</code> <code>pow()</code></li>
+      <li>Constants: <code>PI</code> <code>E</code></li>
+      <li>Results update automatically as you type</li>
+    </ul>
+  </div>
+
+</div>
+
+<footer>
+  Formula Calculator &mdash; runs entirely in your browser &mdash;
+  <a href="https://github.com/bdedeurwaerder/formula-calculator" target="_blank">GitHub</a>
+</footer>
+
+<script>
+(function () {
+  var rowsContainer = document.getElementById('rowsContainer');
+  var emptyState = document.getElementById('emptyState');
+  var addRowBtn = document.getElementById('addRowBtn');
+  var clearAllBtn = document.getElementById('clearAllBtn');
+  var variableBar = document.getElementById('variableBar');
+
+  var rows = [];
+  var nextLetter = 0;
+
+  var SAFE_FUNCTIONS = {
+    sqrt: Math.sqrt,
+    abs: Math.abs,
+    round: Math.round,
+    floor: Math.floor,
+    ceil: Math.ceil,
+    min: Math.min,
+    max: Math.max,
+    sin: Math.sin,
+    cos: Math.cos,
+    tan: Math.tan,
+    log: Math.log,
+    log2: Math.log2,
+    log10: Math.log10,
+    pow: Math.pow,
+    exp: Math.exp,
+    sign: Math.sign,
+    trunc: Math.trunc,
+    random: Math.random,
+    atan2: Math.atan2,
+    hypot: Math.hypot
+  };
+
+  var SAFE_CONSTANTS = {
+    PI: Math.PI,
+    E: Math.E,
+    LN2: Math.LN2,
+    LN10: Math.LN10,
+    SQRT2: Math.SQRT2
+  };
+
+  function getNextVarName() {
+    var name;
+    if (nextLetter < 26) {
+      name = String.fromCharCode(65 + nextLetter);
+    } else {
+      name = 'V' + (nextLetter - 25);
+    }
+    nextLetter++;
+    return name;
+  }
+
+  function isVarNameUsed(name, excludeRow) {
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i] !== excludeRow && rows[i].varName.toUpperCase() === name.toUpperCase()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function safeEvaluate(formula, variables) {
+    if (!formula.trim()) return { value: null, error: null };
+
+    // Validate: only allow safe characters
+    // Allow: digits, letters, underscores, operators, parens, dots, commas, whitespace
+    if (/[^a-zA-Z0-9_+\-*/%().^, \t]/.test(formula)) {
+      return { value: null, error: 'Invalid characters' };
+    }
+
+    // Build expression by substituting variables and functions
+    var expr = formula;
+
+    // Replace ^ with ** for exponentiation
+    expr = expr.replace(/\^/g, '**');
+
+    // Create a safe evaluation context
+    var context = {};
+
+    // Add constants
+    for (var key in SAFE_CONSTANTS) {
+      context[key] = SAFE_CONSTANTS[key];
+    }
+
+    // Add variables
+    for (var key in variables) {
+      context[key] = variables[key];
+      // Also allow lowercase references
+      context[key.toLowerCase()] = variables[key];
+    }
+
+    // Add functions
+    for (var key in SAFE_FUNCTIONS) {
+      context[key] = SAFE_FUNCTIONS[key];
+    }
+
+    try {
+      // Build argument list and values for Function constructor
+      var argNames = Object.keys(context);
+      var argValues = argNames.map(function(k) { return context[k]; });
+
+      // Additional safety: block dangerous patterns
+      if (/\b(eval|function|constructor|prototype|__proto__|window|document|this|globalThis|import|require|fetch|XMLHttpRequest)\b/i.test(expr)) {
+        return { value: null, error: 'Forbidden keyword' };
+      }
+
+      var fn = new Function(argNames.join(','), '"use strict"; return (' + expr + ');');
+      var result = fn.apply(null, argValues);
+
+      if (typeof result !== 'number' || !isFinite(result)) {
+        if (result !== result) { // NaN
+          return { value: null, error: 'NaN' };
+        }
+        if (result === Infinity || result === -Infinity) {
+          return { value: null, error: 'Infinity' };
+        }
+        return { value: null, error: 'Not a number' };
+      }
+
+      return { value: result, error: null };
+    } catch (e) {
+      return { value: null, error: e.message || 'Error' };
+    }
+  }
+
+  function recalculateAll() {
+    // Build variable map by evaluating in order
+    // Multiple passes to resolve dependencies
+    var variables = {};
+    var resolved = {};
+    var maxPasses = rows.length + 1;
+
+    for (var pass = 0; pass < maxPasses; pass++) {
+      var changed = false;
+      for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        var result = safeEvaluate(row.formula, variables);
+
+        if (result.value !== null) {
+          var prev = variables[row.varName];
+          variables[row.varName] = result.value;
+          if (prev !== result.value) changed = true;
+          resolved[i] = result;
+        } else if (result.error) {
+          resolved[i] = result;
+        } else {
+          resolved[i] = { value: null, error: null };
+        }
+      }
+      if (!changed && pass > 0) break;
+    }
+
+    // Update display
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      var res = resolved[i];
+      var resultEl = row.el.querySelector('.result-value');
+      var rowEl = row.el;
+
+      rowEl.classList.remove('error');
+      resultEl.classList.remove('error', 'empty');
+
+      if (res.error) {
+        resultEl.textContent = res.error;
+        resultEl.classList.add('error');
+        rowEl.classList.add('error');
+      } else if (res.value !== null) {
+        // Format: show up to 10 decimal places, remove trailing zeros
+        var formatted = parseFloat(res.value.toFixed(10)).toString();
+        resultEl.textContent = formatted;
+      } else {
+        resultEl.textContent = '\u2014';
+        resultEl.classList.add('empty');
+      }
+    }
+
+    updateVariableBar(variables);
+  }
+
+  function updateVariableBar(variables) {
+    variableBar.innerHTML = '';
+    var hasVars = false;
+
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      var val = variables[row.varName];
+      if (val !== undefined) {
+        hasVars = true;
+        var pill = document.createElement('span');
+        pill.className = 'var-pill';
+        var formatted = parseFloat(val.toFixed(10)).toString();
+        pill.innerHTML = '<span class="var-name">' + escapeHtml(row.varName) + '</span>' +
+                         '<span class="var-eq">=</span>' +
+                         '<span class="var-value">' + escapeHtml(formatted) + '</span>';
+        variableBar.appendChild(pill);
+      }
+    }
+
+    variableBar.style.display = hasVars ? 'flex' : 'none';
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function addRow() {
+    var varName = getNextVarName();
+
+    var rowEl = document.createElement('div');
+    rowEl.className = 'formula-row';
+
+    rowEl.innerHTML =
+      '<div class="row-var">' +
+        '<label>Var</label>' +
+        '<input type="text" class="var-input" value="' + varName + '" spellcheck="false" autocomplete="off">' +
+      '</div>' +
+      '<div class="row-formula">' +
+        '<label>Formula</label>' +
+        '<input type="text" class="formula-input" placeholder="e.g. A * 2 + 10" spellcheck="false" autocomplete="off">' +
+      '</div>' +
+      '<div class="row-result">' +
+        '<label>Result</label>' +
+        '<div class="result-value empty">&mdash;</div>' +
+      '</div>' +
+      '<div class="row-remove">' +
+        '<button title="Remove row">&times;</button>' +
+      '</div>';
+
+    var row = {
+      el: rowEl,
+      varName: varName,
+      formula: ''
+    };
+
+    // Variable name input
+    var varInput = rowEl.querySelector('.var-input');
+    varInput.addEventListener('input', function () {
+      var newName = varInput.value.trim().replace(/[^a-zA-Z0-9_]/g, '');
+      if (newName && !isVarNameUsed(newName, row)) {
+        row.varName = newName;
+      }
+      varInput.value = row.varName;
+      recalculateAll();
+    });
+
+    // Formula input
+    var formulaInput = rowEl.querySelector('.formula-input');
+    formulaInput.addEventListener('input', function () {
+      row.formula = formulaInput.value;
+      recalculateAll();
+    });
+
+    // Remove button
+    var removeBtn = rowEl.querySelector('.row-remove button');
+    removeBtn.addEventListener('click', function () {
+      var idx = rows.indexOf(row);
+      if (idx > -1) {
+        rows.splice(idx, 1);
+        rowEl.remove();
+        updateUI();
+        recalculateAll();
+      }
+    });
+
+    rows.push(row);
+    rowsContainer.appendChild(rowEl);
+    updateUI();
+    formulaInput.focus();
+  }
+
+  function clearAll() {
+    rows = [];
+    nextLetter = 0;
+    // Remove all formula rows
+    var rowEls = rowsContainer.querySelectorAll('.formula-row');
+    for (var i = 0; i < rowEls.length; i++) {
+      rowEls[i].remove();
+    }
+    updateUI();
+    recalculateAll();
+  }
+
+  function updateUI() {
+    emptyState.style.display = rows.length === 0 ? 'block' : 'none';
+    clearAllBtn.disabled = rows.length === 0;
+  }
+
+  // Event listeners
+  addRowBtn.addEventListener('click', addRow);
+  clearAllBtn.addEventListener('click', clearAll);
+
+  // Keyboard shortcut: Enter in formula input adds a new row
+  rowsContainer.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.classList.contains('formula-input')) {
+      e.preventDefault();
+      addRow();
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
